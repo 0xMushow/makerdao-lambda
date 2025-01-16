@@ -31,17 +31,30 @@ export async function getJobAt(sequencer: ethers.Contract, index: number): Promi
 }
 
 /**
- * Determines whether a specific job is workable.
+ * Checks if a job has been workable in the last N blocks.
  * @param jobAddress - The address of the job.
  * @param provider - The Ethereum provider.
  * @param network - The name of the keeper network.
- * @returns True if the job is workable, false otherwise.
+ * @param blockWindow - The number of blocks to check.
+ * @returns True if the job was workable in any of the last N blocks, false otherwise.
  */
-export async function isJobWorkable(jobAddress: string, provider: ethers.providers.JsonRpcProvider, network: string): Promise<boolean> {
-    const jobAbi = [
-        "function workable(bytes32 network) external view returns (bool canWork, bytes memory args)"
-    ];
-    const jobContract = new ethers.Contract(jobAddress, jobAbi, provider);
-    const [canWork] = await jobContract.workable(ethers.utils.formatBytes32String(network));
-    return canWork;
+export async function isJobWorkableInLastBlocks(
+    jobAddress: string,
+    provider: ethers.providers.JsonRpcProvider,
+    network: string,
+    blockWindow: number
+): Promise<boolean> {
+    const currentBlock = await provider.getBlockNumber();
+    for (let i = 0; i < blockWindow; i++) {
+        const blockNumber = currentBlock - i;
+        const jobAbi = [
+            "function workable(bytes32 network) external view returns (bool canWork, bytes memory args)"
+        ];
+        const jobContract = new ethers.Contract(jobAddress, jobAbi, provider);
+        const [canWork] = await jobContract.workable(ethers.utils.formatBytes32String(network), { blockTag: blockNumber });
+        if (canWork) {
+            return true;
+        }
+    }
+    return false;
 }
