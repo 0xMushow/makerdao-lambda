@@ -48,6 +48,8 @@ export const handler = async (event: any, context: any) => {
                 const alertMessage = `Job ${i} at address ${jobAddress} has NOT been workable in the last ${BLOCK_WINDOW} blocks.`;
                 await sendDiscordAlert(discordWebhookUrl, alertMessage);
                 logger.info(`Discord alert sent for Job ${i}.`);
+            } else {
+                logger.info(`Job ${i} is workable.`);
             }
         }
     } catch (error) {
